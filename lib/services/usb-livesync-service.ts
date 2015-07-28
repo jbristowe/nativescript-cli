@@ -24,8 +24,11 @@ export class UsbLiveSyncService extends usbLivesyncServiceBaseLib.UsbLiveSyncSer
 		$logger: ILogger,
 		private $injector: IInjector,
 		private $platformService: IPlatformService,
-		$dispatcher: IFutureDispatcher) {
-			super($devicesServices, $mobileHelper, $localToDevicePathDataFactory, $logger, $options, $deviceAppDataFactory, $fs, $dispatcher); 
+		$dispatcher: IFutureDispatcher,
+		$childProcess: IChildProcess,
+		$iOSEmulatorServices: Mobile.IiOSSimulatorService,
+		private $devicePlatformsConstants: Mobile.IDevicePlatformsConstants) {
+			super($devicesServices, $mobileHelper, $localToDevicePathDataFactory, $logger, $options, $deviceAppDataFactory, $fs, $dispatcher, $childProcess, $iOSEmulatorServices); 
 	}
 	
 	public liveSync(platform: string): IFuture<void> {
@@ -66,9 +69,13 @@ export class UsbLiveSyncService extends usbLivesyncServiceBaseLib.UsbLiveSyncSer
 				}).future<string>()();
 			}
 			
+			let notRunningiOSSimulatorAction = (): IFuture<void> => {
+				return this.$platformService.deployOnEmulator(this.$devicePlatformsConstants.iOS.toLowerCase());
+			}
+			
 			let watchGlob = path.join(this.$projectData.projectDir, constants.APP_FOLDER_NAME);
 			
-			this.sync(platform, this.$projectData.projectId, platformData.appDestinationDirectoryPath, projectFilesPath, this.excludedProjectDirsAndFiles, watchGlob, restartAppOnDeviceAction, notInstalledAppOnDeviceAction, beforeBatchLiveSyncAction, canLiveSyncAction).wait();
+			this.sync(platform, this.$projectData.projectId, platformData.appDestinationDirectoryPath, projectFilesPath, this.excludedProjectDirsAndFiles, watchGlob, restartAppOnDeviceAction, notInstalledAppOnDeviceAction, notRunningiOSSimulatorAction, beforeBatchLiveSyncAction, canLiveSyncAction).wait();
 		}).future<void>()();
 	}
 	
